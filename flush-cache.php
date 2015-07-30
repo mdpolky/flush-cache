@@ -91,7 +91,10 @@ class flushCache_plugin {
 	public function get_environment()
 	{
 		$serverName = getenv('HTTP_HOST'); //px-wordpress.gr-dev.com
-		$environment = str_replace("-wordpress", "", $serverName);
+		if (strpos($serverName, 'dev') !== FALSE)
+			$environment = 'px.gr-dev.com';
+		else
+			$environment = 'px.guaranteedrate.com';
 		return $environment;
 	}
 }
