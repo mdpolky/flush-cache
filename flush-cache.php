@@ -24,78 +24,95 @@ class flushCache_plugin {
 	public function save_post_video($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-videos";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_tool($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-tools";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_master_class($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-master-classes";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_hero($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-heroes";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_featured_agent($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-featured-agents";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_presenter($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-presenters";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
 	public function save_post_playbook($post_id, $post, $update)
 	{
 		$cacheKey = "wordpress-playbooks";
-		$result = $this->curl_delete($cacheKey);
-		//var_dump($result); exit;
+		$this->delete_by_cacheKey($cacheKey);
 	}
 
-	public function curl_delete($cacheKey)
+	public function get_endpoints()
 	{
-	    $environment = $this->get_environment();
+		$environment = $this->get_environment();
+		if ($environment === 'dev')
+			return Array('http://px.gr-dev.com:80', 'http://px.gr-dev.com:80');
+		else if ($environment === 'prod') {
+			return Array('http://10.1.40.139:8012',
+						 'http://10.1.40.138:8012');
+		}
+		else
+			return Array();
+	}
 
-	    $ch = curl_init();
-	    $url = $environment . "/v100/Cache/" . $cacheKey;
-	    curl_setopt($ch, CURLOPT_URL, $url);
-	    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-	    curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-	    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	    curl_setopt($ch, CURLOPT_VERBOSE, 1);
-	    curl_setopt($ch, CURLOPT_HEADER, 1);
-	    $result = curl_exec($ch);
-	    curl_close($ch);
+	public function delete_by_cacheKey($cacheKey)
+	{
+	    $endpoints = $this->get_endpoints();
+	    for ($i=0; $i < count($endpoints); $i++) {
+		    $this->fire_and_forget_request($endpoints[$i], $cacheKey);
+	    }
+	}
 
-	    return $result;
+	public function fire_and_forget_request($url, $cacheKey)
+	{
+		$parseUrl = parse_url($url);
+		$host = $parseUrl['host'];
+		$port = $parseUrl['port'];
+		
+	    $fp = fsockopen($host, $port, $errno, $errstr, 30);
+		if (!$fp) {
+		    echo "$errstr ($errno)<br />\n";
+		} else {
+		    $request = "Delete /v100/Cache/".$cacheKey." HTTP/1.1\r\n";
+		    $request.= "Host: ".$host."\r\n";
+		    $request.= "Connection: Close\r\n\r\n";
+		    fwrite($fp, $request);
+	            sleep(1);
+		    fclose($fp);
+		}
 	}
 
 	public function get_environment()
 	{
 		$serverName = getenv('HTTP_HOST'); //px-wordpress.gr-dev.com
-		if (strpos($serverName, 'dev') !== FALSE)
-			$environment = 'px.gr-dev.com';
-		else
-			$environment = 'px.guaranteedrate.com';
-		return $environment;
+
+		if (strpos($serverName, 'gr-dev') >= 0)
+			return 'dev';
+		else if (strpos($serverName, 'guaranteedrate') >= 0)
+			return 'prod';
+
+		return '';
 	}
 }
 
