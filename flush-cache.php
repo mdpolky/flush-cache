@@ -107,9 +107,9 @@ class flushCache_plugin {
 	{
 		$serverName = getenv('HTTP_HOST'); //px-wordpress.gr-dev.com
 
-		if (strpos($serverName, 'gr-dev') >= 0)
+		if (strpos($serverName, "gr-dev") !== FALSE)
 			return 'dev';
-		else if (strpos($serverName, 'guaranteedrate') >= 0)
+		else if (strpos($serverName, "guaranteedrate") !== FALSE)
 			return 'prod';
 
 		return '';
